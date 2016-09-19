@@ -1218,51 +1218,51 @@ HKO_mSummary.Read = function (mSummary = F, d_UV = F){
   
   if (d_UV){
     
+    start.date = '2012-01-01' %>% ymd()
+    end.date = (now() - days(1)) %>% strptime('%Y-%m-%d') %>% ymd()
     
-    df <- data.frame(matrix(ncol = 5, nrow = 10000))
-    names(df) = c('year', 'month', 'day', 'uv_max', 'uv_avg')
-    counter = 1
+    day.Difference = (end.date - start.date) %>% as.numeric()
     
-    for (yr in 2014:2016){
+    df = matrix(nrow = day.Difference, ncol = 3)
+    colnames(df) = c('date', 'UV.Max', 'UV.Avg')
+    
+    for (i in 0:day.Difference-1){
       
-      for (m in 1:12){
-        
-        for (d in 1 : 28){
-          
-          url = paste('http://www.weather.gov.hk/cgi-bin/hko/yes.pl?year=', yr, '&month=', str_pad(m, 2, pad = "0"), '&day=', str_pad(m, 2, pad = '0'), '&language=english&B1=Confirm', sep = '')
-          
-          thepage = readLines(url)
-          
-          myPattern1 = 'The maximum UV index was'
-          myPattern2 = 'The mean UV index recorded at King'
-          
-          datalines1 = grep(myPattern1, thepage, value = T)
-          datalines2 = grep(myPattern2, thepage, value = T)
-          
-          uv.max = as.numeric(substr(datalines1, str_length(datalines1)-2, str_length(datalines1)-1))
-          uv.avg = as.numeric(substr(datalines2, str_length(datalines2)-2, str_length(datalines2)-1))
-          
-          df[counter, 1] = yr
-          df[counter, 2] = m
-          df[counter, 3] = d
-          df[counter, 4] = uv.max
-          df[counter, 5] = uv.avg
-            
-          
-          counter = counter + 1
-          
-          WriteCSV_ToFolder(file_path = dir_HKO.Met, master_path = dir_Master, varName = df, 
-                      fileName = 'hko_cis_D_UV_TEMP.csv', NA.char = '\\N')
-          
-        }
-        
-      }
+      working.Day = start.date + days(i)
+      yr = working.Day %>% year()
+      mn = working.Day %>% month() %>% str_pad(width = 2, pad = '0')
+      dy = working.Day %>% day() %>% str_pad(width = 2, pad = '0')
       
+      url = paste('http://www.weather.gov.hk/cgi-bin/hko/yes.pl?year=', yr, '&month=', mn, '&day=', dy, '&language=english&B1=Confirm', sep = '')
+      thepage = readLines(url)
+      
+      myPattern1 = 'The maximum UV index was'
+      myPattern2 = 'The mean UV index recorded at King'
+          
+      datalines1 = grep(myPattern1, thepage, value = T)
+      datalines2 = grep(myPattern2, thepage, value = T)
+      
+      uv.max = as.numeric(substr(datalines1, str_length(datalines1)-2, str_length(datalines1)-1))
+      uv.avg = as.numeric(substr(datalines2, str_length(datalines2)-2, str_length(datalines2)-1))
+    
+      df[i+1, 1] = working.Day %>% as.character()
+      df[i+1, 2] = uv.max
+      df[i+1, 3] = uv.avg
+      
+      print(working.Day)
+      
+      write.csv(df, 'UVcaptures.csv', row.names = F)
       
     }
     
-  }
-}  
+    
+        
+  } ##END if UV
+      
+      
+}##END if UV
+    
+
 
 
 

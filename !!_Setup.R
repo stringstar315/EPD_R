@@ -38,7 +38,6 @@ library("openair")
 library("reshape")
 library("stringr")
 library("ggplot2")
-#install.packages('lubridate')
 library('lubridate')
 
 

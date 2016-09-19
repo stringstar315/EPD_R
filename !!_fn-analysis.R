@@ -352,7 +352,53 @@ MetxAQHI = function(startYear = 2014){
 
 
 
+Study_NO2CBvCL = function(){
+  
+  air.hr = LoadAirHour(year = 2015:2016, pollutant.pick = c('o3_ug', 'no2_ug', 'nox_ug', 'so2_ug', 'co_ug')) %>% 
+    filter(site == 'CB' | site == 'CL')
+  air.hr.melt = melt(air.hr , id = c('date', 'site'))
+  air.hr.cast = cast(air.hr.melt, date~site+variable, value = 'value', fun.aggregate = 'mean')
+  air.hr.cast$date2 = air.hr.cast$date %>% strptime('%Y-%m-%d') %>% ymd()
+  
+  diff.Pollutants = air.hr.cast %>% mutate(hour = date %>% substr(12,13) %>% as.numeric(), 
+    diff.no2 = CB_no2_ug - CL_no2_ug, diff.nox = CB_nox_ug - CL_nox_ug, diff.co = CB_co_ug - CL_co_ug) %>%
+    select(date, hour, diff.co, diff.nox, diff.no2, date2) %>% group_by(date2) %>%arrange(desc(diff.no2))
 
+  airData = diff.Pollutants %>% summarise(max.hour = hour[1], max2.hour = hour[2], max3.hour = hour[3],
+                                     max.NO2 = diff.no2[1], max2.NO2 = diff.no2[2], max3.NO2 = diff.no2[3],
+                                     max.NOx = diff.nox[1], max2.NOx = diff.nox[2], max3.NOx = diff.nox[3],
+                                     max.CO = diff.co[1], max2.CO = diff.co[2], max3.CO = diff.co[3])
+
+  library(DBI)
+  library(RMySQL)
+  
+  con <- dbConnect(MySQL(), user="user", password="as3", dbname='db_as3', host="localhost")
+    
+  myQuery = 'SELECT * FROM aqhi02_daysummary;'
+  aqhi.daySummary = dbGetQuery(con, myQuery) %>% filter(site == 'CB')
+  
+  myQuery = 'SELECT * FROM met01_daily;'
+  met.summary = dbGetQuery(con, myQuery) %>% select(date, ws_SF, ws_KP, wd_wgl, UV_Max)
+  
+  
+  
+  airData$date = airData$date %>% ymd()
+  aqhi.daySummary$date = aqhi.daySummary$date %>% ymd()
+   met.summary$date = met.summary$date %>% ymd()
+   
+   
+  airData.v2 = merge.data.frame(airData, aqhi.daySummary %>% select(date, aqhi_daymax) %>% distinct(), by = 'date', all.x = T, all.y = F)
+  
+  airData.v3 = merge.data.frame(airData.v2, met.summary %>% distinct(), by = 'date', all.x = T, all.y = F)
+write.csv(airData.v3, 'summ3.csv', row.names = F)
+
+
+
+  
+  
+  
+  
+}
 
 
 

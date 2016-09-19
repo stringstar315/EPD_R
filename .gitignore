@@ -1,0 +1,8 @@
+*.RData
+example.R
+
+
+*.bak
+*.zip
+*.rar
+build/
